@@ -1,0 +1,51 @@
+version: '3'
+
+networks:
+ backend:
+services:
+  redis-master:
+    image: 'bitnami/redis:latest'
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+#      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 100M
+    networks:
+      - backend
+    ports:
+      - '6379:6379'
+    environment:
+      - REDIS_REPLICATION_MODE=master
+      - REDIS_PASSWORD=my_master_password
+    volumes:
+      - '/c/data/redis:/bitnami'
+
+  redis-replica:
+    image: 'bitnami/redis:latest'
+    ports:
+      - '6378:6379'
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 100M
+    #depends_on:
+     # - redis-master
+    environment:
+      - REDIS_REPLICATION_MODE=slave
+      - REDIS_MASTER_HOST=redis-master
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_MASTER_PASSWORD=my_master_password
+      - REDIS_PASSWORD=my_replica_password
+    volumes:
+      - '/c/data/redis1:/bitnami'
